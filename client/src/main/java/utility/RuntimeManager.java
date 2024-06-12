@@ -4,6 +4,7 @@ import commandLine.Console;
 import commandLine.Printable;
 import exceptions.*;
 import formsForUser.StudyGroupForm;
+import formsForUser.UserForm;
 import models.StudyGroup;
 
 import java.io.File;
@@ -11,8 +12,6 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.Objects;
 import java.util.Scanner;
-// сделать команды общими, в них обработчик, в котором мы просим всё сразу, а не перекидываем
-// пользователя на постоянный ввод штук для StudyGroup
 
 /**Класс для начала работы приложения*/
 public class RuntimeManager {
@@ -20,6 +19,7 @@ public class RuntimeManager {
     private final Printable console;
     private final ClientTCP clientTCP;
     private final Scanner userScanner;
+    private User user = null;
     public RuntimeManager(Printable console, ClientTCP clientTCP, Scanner userScanner) {
         this.console = console;
         this.clientTCP = clientTCP;
@@ -28,40 +28,47 @@ public class RuntimeManager {
 
     /**Метод, запускающий приложение*/
     public void letsGo() {
-        clientTCP.connectToServer(); // переместила из try
-        try {
-            if (System.getenv("filePathToRead") != null) ExecuteScriptManager.addFile(System.getenv("filePathToRead"));
+        clientTCP.connectToServer();
+        while (true) {
             try {
-                while (true) {
-                    if (!userScanner.hasNext()) throw new ForcedExit("Ввод отсутствует");
-                    String[] userCommand = (userScanner.nextLine().trim() + " ").split(" ", 2); // прибавляем пробел, чтобы split выдал два элемента в массиве
-                    Response response = clientTCP.sendAndAskResponse(new Request(userCommand[0].trim(), userCommand[1].trim()));
-                    this.printResponse(response);
-                    switch (response.getResponseStatus()) {
-                        case ASK_FOR_OBJECT -> {
-                            console.println(response.getResponse());
-                            StudyGroup studyGroup = new StudyGroupForm(console).build();
-                            if (!studyGroup.validate())
-                                throw new InvalideForm("Данные для формы невалидны, объект не был создан(");
-                            Response newResponse = clientTCP.sendAndAskResponse(
-                                    new Request(
-                                            userCommand[0].trim(),
-                                            userCommand[1].trim(),
-                                            studyGroup));
-                            if (newResponse.getResponseStatus() != ResponseStatus.OK) {
-                                console.printError(newResponse.getResponse());
-                            } else {
-                                this.printResponse(newResponse);
-                            }
+                if (Objects.isNull(user)) {
+                    Response response = null;
+                    boolean isLogIn = true;
+                    do {
+                        if (!Objects.isNull(response)) {
+                            console.println((isLogIn) ? "такой логин не был найден (" : "попробуйте использовать другой догин");
                         }
-                        case EXIT -> throw new ForcedExit("Вы вышли из приложения с помощью команды exit");
-                        case EXECUTE_SCRIPT -> {
-                            Console.setIsItInFile(true);
-                            this.fileExecution(response.getResponse());
-                            Console.setIsItInFile(false);
+                        UserForm userForm = new UserForm(console);
+                        isLogIn = userForm.askIfLogin();
+                        user = userForm.build();
+                        if (isLogIn) {
+                            response = clientTCP.sendAndAskResponse(new Request("log_up", "", user)); //зайти в "аккаунт"
+                        } else {
+                            response = clientTCP.sendAndAskResponse(new Request("log_in", "", user)); // зарегистрироваться
                         }
-                        default -> {
-                        }
+                    } while (response.getResponseStatus() != ResponseStatus.OK);
+                    console.println("вы зашли в аккаунт!");
+                }
+                StudyGroup studyGroup = null;
+                if (!userScanner.hasNext()) throw new ForcedExit("Ввод отсутствует");
+                String[] userCommand = (userScanner.nextLine().trim() + " ").split(" ", 2); // прибавляем пробел, чтобы split выдал два элемента в массиве
+                if (userCommand[0].equals("add") || userCommand[0].equals("update") || userCommand[0].equals("remove_greater")) {
+                    studyGroup = this.build();
+                }
+                Response response = clientTCP.sendAndAskResponse(new Request(userCommand[0].trim(), userCommand[1].trim(), studyGroup, user));
+                this.printResponse(response);
+                switch (response.getResponseStatus()) {
+                    case EXIT -> throw new ForcedExit("Вы вышли из приложения с помощью команды exit");
+                    case EXECUTE_SCRIPT -> {
+                        Console.setIsItInFile(true);
+                        this.fileExecution(response.getResponse());
+                        Console.setIsItInFile(false);
+                    }
+                    case LOGIN_FAILED -> {
+                        console.printError(response.getResponse());
+                        this.user = null;
+                    }
+                    default -> {
                     }
                 }
             } catch (ForcedExit e) {
@@ -70,7 +77,7 @@ public class RuntimeManager {
             } catch (InvalideForm e) {
                 console.printError(e.getMessage());
             }
-        } catch (FileNotFoundException ignored) {}
+        }
     }
 
     private void printResponse(Response response){
@@ -96,9 +103,13 @@ public class RuntimeManager {
         else console.println("Путь получен успешно");
         args = args.trim();
         try {
+            StudyGroup studyGroup = null;
             ExecuteScriptManager.pushFile(args);
             for (String line = ExecuteScriptManager.readLine(); line != null; line = ExecuteScriptManager.readLine()) {
                 String[] userCommand = (line + " ").split(" ", 2);
+                if (userCommand[0].equals("add") || userCommand[0].equals("update") || userCommand[0].equals("remove_greater")) {
+                    studyGroup = this.build();
+                }
                 userCommand[1] = userCommand[1].trim();
                 if (userCommand[0].isBlank()) return;
                 if (userCommand[0].equals("execute_script")){
@@ -108,30 +119,9 @@ public class RuntimeManager {
                     }
                 }
                 console.println("Выполнение команды " + userCommand[0]);
-                Response response = clientTCP.sendAndAskResponse(new Request(userCommand[0].trim(), userCommand[1].trim()));
+                Response response = clientTCP.sendAndAskResponse(new Request(userCommand[0].trim(), userCommand[1].trim(), studyGroup, user));
                 this.printResponse(response);
                 switch (response.getResponseStatus()){
-                    case ASK_FOR_OBJECT -> {
-                        StudyGroup studyGroup;
-                        try{
-                            studyGroup = new StudyGroupForm(console).build();
-                            if (!studyGroup.validate()) throw new InvalideForm("Невалидные значения для формы StudyGroup или Person");
-                        } catch (InvalideForm e){
-                            console.printError(e.getMessage());
-                            continue;
-                        }
-                        Response newResponse = clientTCP.sendAndAskResponse(
-                                new Request(
-                                        userCommand[0].trim(),
-                                        userCommand[1].trim(),
-                                        studyGroup));
-                        if (newResponse.getResponseStatus() != ResponseStatus.OK){
-                            console.printError(newResponse.getResponse());
-                        }
-                        else {
-                            this.printResponse(newResponse);
-                        }
-                    }
                     case EXIT -> throw new ForcedExit("Вы вышли из приложения с помощью команды exit");
                     case EXECUTE_SCRIPT -> {
                         this.fileExecution(response.getResponse());
@@ -146,5 +136,11 @@ public class RuntimeManager {
         } catch (IOException e) {
             console.printError("Ошибка ввода вывода");
         }
+    }
+    private StudyGroup build() {
+        try {
+            return new StudyGroupForm(console).build(user);
+        } catch (InvalideForm ignored) {}
+        return null;
     }
 }
