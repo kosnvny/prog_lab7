@@ -19,11 +19,6 @@ import java.util.Objects;
 public class CommandManager {
     /**Отображение, хранящее как ключ строковое предствление команды, а как значение - саму команду*/
     private final HashMap<String, Command> commands = new HashMap<>();
-    private final FileManager fileManager;
-
-    public CommandManager(FileManager fileManager) {
-        this.fileManager = fileManager;
-    }
 
     /** Добавление команды в отображение и коллекции
      * @param command добавляемая команда*/
@@ -68,9 +63,6 @@ public class CommandManager {
             else ScannerManager.setUsersScanner(request.getStudyGroup().toString());
         }
         Response response = command.execute(request);
-        if (command instanceof EditingCollection) {
-            fileManager.writeCollection();
-        }
         return response;
     }
 }
