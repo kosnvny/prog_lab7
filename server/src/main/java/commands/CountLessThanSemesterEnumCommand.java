@@ -21,7 +21,8 @@ public class CountLessThanSemesterEnumCommand extends Command{
      * @throws IllegalArguments Выбрасывается, если получены пустые аргументы
      * */
     @Override
-    public Response execute(Request request) throws IllegalArguments {
+    public Response execute(Request request) throws IllegalArguments, LessRoleThanNeedException {
+        if (request.getUser().getRole().ordinal() == 0) throw new LessRoleThanNeedException();
         if (request.getArgs().isBlank()) throw new IllegalArguments("В команде count_less_than_semester_enum не может быть пустого аргумента");
         try {
             Semester semester = Semester.valueOf(request.getArgs().trim().toUpperCase());

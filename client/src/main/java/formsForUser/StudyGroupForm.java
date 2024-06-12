@@ -5,6 +5,7 @@ import exceptions.InvalideForm;
 import models.Person;
 import models.StudyGroup;
 import utility.ExecuteScriptManager;
+import utility.User;
 
 public class StudyGroupForm extends Form<StudyGroup> {
     private final Printable console;
@@ -20,16 +21,27 @@ public class StudyGroupForm extends Form<StudyGroup> {
      */
     @Override
     public StudyGroup build() throws InvalideForm {
+        User user = new UserForm(console).build();
         Person p = new PersonForm(console).build();
         if (p.validate()) {
             return new StudyGroup(askName(), new CoordinatesForm(console).build(), askCount(), askExpelled(),
                     new FormOfEducationForm(console).build(), new SemesterForm(console).build(),
-                    p);
+                    p, user.getLogin());
         } else {
             throw new InvalideForm("Невалидные данные для формы Person");
         }
     }
 
+    public StudyGroup build(User user) throws InvalideForm {
+        Person p = new PersonForm(console).build();
+        if (p.validate()) {
+            return new StudyGroup(askName(), new CoordinatesForm(console).build(), askCount(), askExpelled(),
+                    new FormOfEducationForm(console).build(), new SemesterForm(console).build(),
+                    p, user.getLogin());
+        } else {
+            throw new InvalideForm("Невалидные данные для формы Person");
+        }
+    }
     private String askName() {
         console.println("Введите название группы, требование: не должно быть пустым или пробелом");
         while (true) {

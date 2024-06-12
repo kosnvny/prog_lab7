@@ -1,6 +1,7 @@
 package commands;
 
 import exceptions.IllegalArguments;
+import exceptions.LessRoleThanNeedException;
 import managers.CollectionManager;
 import utility.Request;
 import utility.Response;
@@ -19,7 +20,8 @@ public class HeadCommand extends Command{
      * @throws IllegalArguments Были получены аргументы
      */
     @Override
-    public Response execute(Request request) throws IllegalArguments {
+    public Response execute(Request request) throws IllegalArguments, LessRoleThanNeedException {
+        if (request.getUser().getRole().ordinal() == 0) throw new LessRoleThanNeedException();
         if (!request.getArgs().isBlank()) throw new IllegalArguments("В команде head не должно быть аргументов");
         if (collectionManager.getCollection().isEmpty()) throw new IllegalArguments("В коллекции нет элементов!");
         return new Response(ResponseStatus.OK, "Первый элемент коллекции: " + collectionManager.head().toString());

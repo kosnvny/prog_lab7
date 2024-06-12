@@ -1,28 +1,48 @@
 package utility;
 
-import commands.Command;
 import exceptions.*;
 import managers.CommandManager;
+import managers.ConnectionManagerPool;
 
-public class RequestHandler {
+import java.io.ObjectOutputStream;
+import java.util.concurrent.Callable;
+
+public class RequestHandler implements Callable<ConnectionManagerPool> {
     private final CommandManager commandManager;
-    public RequestHandler(CommandManager commandManager) {
+    private Request request;
+    private ObjectOutputStream objectOutputStream;
+
+    public RequestHandler(CommandManager commandManager, Request request, ObjectOutputStream objectOutputStream) {
         this.commandManager = commandManager;
+        this.request = request;
+        this.objectOutputStream = objectOutputStream;
     }
 
-    public Response handle(Request request) {
+    public ObjectOutputStream getObjectOutputStream() {
+        return objectOutputStream;
+    }
+
+    public void setObjectOutputStream(ObjectOutputStream objectOutputStream) {
+        this.objectOutputStream = objectOutputStream;
+    }
+
+    /**
+     * Computes a result, or throws an exception if unable to do so.
+     *
+     * @return computed result
+     * @throws Exception if unable to compute a result
+     */
+    @Override
+    public ConnectionManagerPool call() throws Exception {
         try {
-            return commandManager.execute(request);
-        } catch (CommandDoesNotExist e) {
-            return new Response(ResponseStatus.ERROR, e.getMessage()); //"Команды не существует"
-        } catch (IllegalArguments e) {
-            return new Response(ResponseStatus.WRONG_ARGUMENTS, e.getMessage()); //"Невалидные аргументы для команды"
+            return new ConnectionManagerPool(commandManager.execute(request), objectOutputStream);
+        } catch (IllegalArguments | InvalideForm e) {
+            return new ConnectionManagerPool(new Response(ResponseStatus.WRONG_ARGUMENTS,
+                    e.getMessage()), objectOutputStream);
+        } catch (CommandDoesNotExist | RecursionInScriptException | LessRoleThanNeedException e) {
+            return new ConnectionManagerPool(new Response(ResponseStatus.ERROR, e.getMessage()), objectOutputStream);
         } catch (ForcedExit e) {
-            return new Response(ResponseStatus.EXIT, e.getMessage());
-        } catch (RecursionInScriptException e) {
-            return new Response(ResponseStatus.ERROR, e.getMessage()); //"Рекурсия в запускаемых файлах"
-        } catch (InvalideForm e) {
-            return new Response(ResponseStatus.WRONG_ARGUMENTS, e.getMessage()); //"Форма создания объекта получила невалидные значения"
+            return new ConnectionManagerPool(new Response(ResponseStatus.EXIT, e.getMessage()), objectOutputStream);
         }
     }
 }

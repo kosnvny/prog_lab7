@@ -1,6 +1,7 @@
 import commandLine.Console;
 import commandLine.Printable;
 import commands.*;
+import dataBases.DatabaseManager;
 import exceptions.ForcedExit;
 import managers.CollectionManager;
 import managers.CommandManager;
@@ -41,9 +42,8 @@ public class AppServer {
                 new ShowCommand(collectionManager),
                 new UpdateIDCommand(collectionManager)));
         RequestHandler requestHandler = new RequestHandler(commandManager);
-        ServerTCP serverTCP = new ServerTCP(port, console, requestHandler, fileManager);
-        // добавила элемент ибо я заколебалась с этим add
-        collectionManager.addElement(new StudyGroup("dfghj", new Coordinates(10, 10f), 4652L, 895, FormOfEducation.DISTANCE_EDUCATION, Semester.FOURTH, new Person("vghyhbnk", 86f, Colour.GREEN, Country.INDIA)));
+        DatabaseManager databaseManager = new DatabaseManager();
+        ServerTCP serverTCP = new ServerTCP(port, console, commandManager, databaseManager);
         serverTCP.run();
     }
 }

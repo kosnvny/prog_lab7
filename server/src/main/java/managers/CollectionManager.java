@@ -204,4 +204,8 @@ public class CollectionManager {
             throw new IllegalArguments("Такого ID не существует");
         }
     }
+
+    public void removeCollection(Collection<StudyGroup> collection) {
+        this.collection.retainAll(collection);
+    }
 }

@@ -60,7 +60,7 @@ public class CommandManager {
      * @throws RecursionInScriptException рекурсия в скрипте
      * @throws InvalideForm форма заполнения объектов {@link StudyGroup}, {@link Person} или их составляющих получила неверные аргументы
      * */
-    public Response execute(Request request) throws CommandDoesNotExist, IllegalArguments, ForcedExit, RecursionInScriptException, InvalideForm {
+    public Response execute(Request request) throws CommandDoesNotExist, IllegalArguments, ForcedExit, RecursionInScriptException, InvalideForm, LessRoleThanNeedException {
         Command command = commands.get(request.getCommandName());
         if (command == null) throw new CommandDoesNotExist("Данной команды не существует");
         if (command instanceof CommandsWithElement) {

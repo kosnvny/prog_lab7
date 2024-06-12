@@ -1,5 +1,6 @@
 package commands;
 
+import dataBases.DatabaseManagerHandler;
 import exceptions.*;
 import managers.CollectionManager;
 import models.StudyGroup;
@@ -23,15 +24,18 @@ public class UpdateIDCommand extends Command implements EditingCollection, Comma
      * @throws IllegalArguments Аргумент этой команды не может быть пустым
      * */
     @Override
-    public Response execute(Request request) throws IllegalArguments {
+    public Response execute(Request request) throws IllegalArguments, LessRoleThanNeedException {
+        if (request.getUser().getRole().ordinal() < 2) throw new LessRoleThanNeedException();
         if (request.getArgs().isBlank()) throw new IllegalArguments("В команде update должны быть непустые аргументы");
         if (Objects.isNull(request.getStudyGroup())) return new Response(ResponseStatus.ASK_FOR_OBJECT, "Для команды " + getName() + " требуется объект StudyGroup");
         try {
             int id = Integer.parseInt(request.getArgs().trim());
             if (collectionManager.checkIfExists(id)) {
-                StudyGroup sG = request.getStudyGroup();
-                collectionManager.updateID(id, sG);
-                return new Response(ResponseStatus.OK, "Элемент по заданному ID был изменён");
+                if(DatabaseManagerHandler.getDatabaseManager().updateObject(id, request.getStudyGroup(), request.getUser())){
+                    collectionManager.updateID(id, request.getStudyGroup());
+                    return new Response(ResponseStatus.OK, "Объект успешно обновлен");
+                }
+                return new Response(ResponseStatus.ERROR, "первоначальный объект не принадлежал вам(");
             } else {
                 throw new IllegalArguments("Данный ID не существует");
             }

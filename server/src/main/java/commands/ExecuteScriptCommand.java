@@ -20,7 +20,8 @@ public class ExecuteScriptCommand extends Command{
      * @throws CommandDoesNotExist Команда не существует
      * @throws InvalideForm формы для объектов получили неверные аргументы*/
     @Override
-    public Response execute(Request request) throws IllegalArguments, RecursionInScriptException, ForcedExit, CommandDoesNotExist, InvalideForm {
+    public Response execute(Request request) throws IllegalArguments, RecursionInScriptException, ForcedExit, CommandDoesNotExist, InvalideForm, LessRoleThanNeedException {
+        if (request.getUser().getRole().ordinal() < 2) throw new LessRoleThanNeedException();
         if (request.getArgs().isBlank()) throw new IllegalArguments("В команде execute_script аргументом должен быть путь");
         return new Response(ResponseStatus.EXECUTE_SCRIPT, request.getArgs());
     }

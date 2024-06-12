@@ -19,7 +19,8 @@ public class ClearCommand extends Command implements EditingCollection{
      * @throws IllegalArguments Выбрасывается, если получены не пустые аргументы
      * */
     @Override
-    public Response execute(Request request) throws IllegalArguments {
+    public Response execute(Request request) throws IllegalArguments, LessRoleThanNeedException {
+        if (request.getUser().getRole().ordinal() == 0) throw new LessRoleThanNeedException();
         if (!request.getArgs().isBlank()) throw new IllegalArguments("В команде clear не должно быть аргументов");
         collectionManager.clearCollection();
         return new Response(ResponseStatus.OK, "Коллекция очищена");

@@ -41,9 +41,11 @@ public class StudyGroup implements Validator, Comparable<StudyGroup>, Serializab
     /**Староста*/
     @SerializedName("GroupAdmin")
     private Person groupAdmin; //Поле может быть null
+    @SerializedName("UserLogin")
+    private String userLogin;
     private static int newId = 0;
 
-    public StudyGroup(String name, Coordinates coordinates, Long studentsCount, Integer shouldBeExpelled, FormOfEducation formOfEducation, Semester semesterEnum, Person groupAdmin) {
+    public StudyGroup(String name, Coordinates coordinates, Long studentsCount, Integer shouldBeExpelled, FormOfEducation formOfEducation, Semester semesterEnum, Person groupAdmin, String userLogin) {
         this.id = incNewID();
         this.name = name;
         this.coordinates = coordinates;
@@ -53,6 +55,7 @@ public class StudyGroup implements Validator, Comparable<StudyGroup>, Serializab
         this.formOfEducation = formOfEducation;
         this.semesterEnum = semesterEnum;
         this.groupAdmin = groupAdmin;
+        this.userLogin = userLogin;
     }
 
     private int incNewID(){
@@ -97,6 +100,14 @@ public class StudyGroup implements Validator, Comparable<StudyGroup>, Serializab
 
     public int getDistance() {
         return (int) Math.sqrt(Math.pow(coordinates.getX(), 2) + Math.pow(coordinates.getY(), 2));
+    }
+
+    public String getUserLogin() {
+        return userLogin;
+    }
+
+    public void setUserLogin(String userLogin) {
+        this.userLogin = userLogin;
     }
 
     public Integer getId() {

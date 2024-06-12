@@ -1,32 +1,37 @@
 package utility;
 
 import commandLine.Printable;
+import dataBases.DatabaseManager;
 import exceptions.ConnectionErrorException;
-import exceptions.ForcedExit;
 import exceptions.StartingServerException;
-import managers.FileManager;
+import managers.ConnectionManager;
+import managers.CommandManager;
+import managers.FutureManager;
 
 import java.io.*;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
-import java.nio.ByteBuffer;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class ServerTCP {
     private final int port;
     private final Printable console;
     private ServerSocketChannel serverSocketChannel;
     private SocketChannel socketChannel;
-    private final RequestHandler requestHandler;
-    private final FileManager fileManager;
+    private CommandManager commandManager;
+    private DatabaseManager databaseManager;
+    private final ExecutorService fixedThreadpool = Executors.newFixedThreadPool(8);
+
     BufferedInputStream bis = new BufferedInputStream(System.in);
     BufferedReader br = new BufferedReader(new InputStreamReader(bis));
-    public ServerTCP(int port, Printable console, RequestHandler requestHandler, FileManager fileManager) {
+    public ServerTCP(int port, Printable console, CommandManager commandManager, DatabaseManager databaseManager) {
         this.port = port;
         this.console = console;
-        this.requestHandler = requestHandler;
-        this.fileManager = fileManager;
+        this.commandManager = commandManager;
+        this.databaseManager = databaseManager;
     }
 
     private void openServerSocket() throws StartingServerException{ // открытие сокета
@@ -34,7 +39,7 @@ public class ServerTCP {
             SocketAddress socketAddress = new InetSocketAddress(port);
             serverSocketChannel = ServerSocketChannel.open();
             serverSocketChannel.bind(socketAddress);
-            serverSocketChannel.configureBlocking(false);
+            //serverSocketChannel.configureBlocking(false);
         } catch (IOException exception) {
             console.printError("Произошла ошибка при попытке использовать порт '" + port + "'!");
             throw new StartingServerException();
@@ -48,50 +53,6 @@ public class ServerTCP {
         } catch (IOException exception) {
             throw new ConnectionErrorException();
         }
-    }
-
-    private boolean processClientRequest(SocketChannel clientSocket) { // обработка полученных запросов
-        Request userRequest = null;
-        Response response = null;
-        try {
-            Request request = getSocketObjet(clientSocket);
-            console.println(request.toString());
-            response = requestHandler.handle(request);
-            sendSocketObject(clientSocket, response);
-        } catch (ClassNotFoundException e) {
-            console.printError("Произошла ошибка при чтении полученных данных!");
-        } catch (InvalidClassException e) {
-            console.printError("Произошла ошибка при отправке данных на клиент!");
-        } catch (IOException e) {
-            if (userRequest == null) {
-                console.printError("Непредвиденный разрыв соединения с клиентом!");
-            } else {
-                console.println("Клиент успешно отключен от сервера!");
-            }
-        }
-        return true;
-    }
-
-    private static Request getSocketObjet(SocketChannel channel) throws IOException, ClassNotFoundException { // чтение объекта из запроса
-        ByteBuffer buffer = ByteBuffer.allocate(1024*10);
-        while (true) {
-            try {
-                channel.read(buffer);
-                buffer.mark();
-                byte[] buf = buffer.array();
-                ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(buf);
-                ObjectInputStream objectInputStream = new ObjectInputStream(byteArrayInputStream);
-                return (Request) objectInputStream.readObject();
-            } catch (StreamCorruptedException ignored) {}
-        }
-    }
-
-    private static void sendSocketObject(SocketChannel socketChannel, Response response) throws IOException { // отправка объекта клиенту
-        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-        ObjectOutputStream objectOutputStream = new ObjectOutputStream(byteArrayOutputStream);
-        objectOutputStream.writeObject(response);
-        objectOutputStream.flush();
-        socketChannel.write(ByteBuffer.wrap(byteArrayOutputStream.toByteArray()));
     }
 
     private void stop() { // закрытие соединения
@@ -111,30 +72,15 @@ public class ServerTCP {
     public void run(){ // запуск соединения
         try{
             openServerSocket();
-            while (true) {
-                try {
-                    if (br.ready()) {
-                        String line = br.readLine();
-                        if (line.equals("exit")) { // чтобы при exit коллекция сохранялась
-                            fileManager.writeCollection();
-                        }
-                    }
-                } catch (IOException ignored) {
-                } catch (ForcedExit e) {
-                    console.printError(e.getMessage());
-                }
-                try (SocketChannel clientSocket = connectToClient()) {
-                    if(clientSocket == null) continue;
-                    clientSocket.configureBlocking(false);
-                    if(!processClientRequest(clientSocket)) break;
-                } catch (ConnectionErrorException ignored) {
-                } catch (IOException exception) {
-                    console.printError("Произошла ошибка при попытке завершить соединение с клиентом!");
-                }
+            while(true){
+                FutureManager.checkAllFutures();
+                try{
+                    fixedThreadpool.submit(new ConnectionManager(commandManager, connectToClient(), databaseManager));
+                } catch (ConnectionErrorException  ignored){}
             }
-            stop();
         } catch (StartingServerException e) {
-            console.printError("Сервер не может быть запущен");
+            console.printError("сервер не может быть запущен");
         }
+        stop();
     }
 }

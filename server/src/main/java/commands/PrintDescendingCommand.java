@@ -1,6 +1,7 @@
 package commands;
 
 import exceptions.IllegalArguments;
+import exceptions.LessRoleThanNeedException;
 import managers.CollectionManager;
 import utility.Request;
 import utility.Response;
@@ -20,7 +21,8 @@ public class PrintDescendingCommand extends Command{
      * @throws IllegalArguments Поступили невалидные аргументы
      */
     @Override
-    public Response execute(Request request) throws IllegalArguments {
+    public Response execute(Request request) throws IllegalArguments, LessRoleThanNeedException {
+        if (request.getUser().getRole().ordinal() == 0) throw new LessRoleThanNeedException();
         if (!request.getArgs().isBlank()) throw new IllegalArguments("В команде print_descending не должно быть аргументов");
         return new Response(ResponseStatus.OK, collectionManager.descendingOrder());
     }

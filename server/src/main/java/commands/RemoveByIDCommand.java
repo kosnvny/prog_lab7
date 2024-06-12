@@ -1,6 +1,8 @@
 package commands;
 
+import dataBases.DatabaseManagerHandler;
 import exceptions.IllegalArguments;
+import exceptions.LessRoleThanNeedException;
 import managers.CollectionManager;
 import utility.Request;
 import utility.Response;
@@ -19,13 +21,18 @@ public class RemoveByIDCommand extends Command implements EditingCollection{
      * @throws IllegalArguments Команде поступили невалидные аргументы
      */
     @Override
-    public Response execute(Request request) throws IllegalArguments {
+    public Response execute(Request request) throws IllegalArguments, LessRoleThanNeedException {
+        if (request.getUser().getRole().ordinal() < 2) throw new LessRoleThanNeedException();
         if (request.getArgs().isBlank()) throw new IllegalArguments("В команде remove_by_id должны быть аргументы");
         try {
             int id = Integer.parseInt(request.getArgs().trim());
             if (collectionManager.checkIfExists(id)) {
-                collectionManager.removeByID(id);
-                return new Response(ResponseStatus.OK, "Элемент по заданному id был удалён");
+                if (DatabaseManagerHandler.getDatabaseManager().deleteObject(id, request.getUser())) {
+                    collectionManager.removeByID(id);
+                    return new Response(ResponseStatus.OK,"Объект удален успешно");
+                } else{
+                    return new Response(ResponseStatus.ERROR, "Выбранный объект не удален. Скорее всего он вам не принадлежит");
+                }
             } else {
                 throw new IllegalArguments("Этот ID не существует");
             }
