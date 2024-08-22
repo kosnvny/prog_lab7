@@ -21,12 +21,9 @@ public class ServerTCP {
     private final Printable console;
     private ServerSocketChannel serverSocketChannel;
     private SocketChannel socketChannel;
-    private CommandManager commandManager;
-    private DatabaseManager databaseManager;
-    private final ExecutorService fixedThreadpool = Executors.newFixedThreadPool(8);
-
-    BufferedInputStream bis = new BufferedInputStream(System.in);
-    BufferedReader br = new BufferedReader(new InputStreamReader(bis));
+    private final CommandManager commandManager;
+    private final DatabaseManager databaseManager;
+    private final ExecutorService fixedThreadPool = Executors.newFixedThreadPool(8);
     public ServerTCP(int port, Printable console, CommandManager commandManager, DatabaseManager databaseManager) {
         this.port = port;
         this.console = console;
@@ -39,7 +36,7 @@ public class ServerTCP {
             SocketAddress socketAddress = new InetSocketAddress(port);
             serverSocketChannel = ServerSocketChannel.open();
             serverSocketChannel.bind(socketAddress);
-            //serverSocketChannel.configureBlocking(false);
+            serverSocketChannel.configureBlocking(false);
         } catch (IOException exception) {
             console.printError("Произошла ошибка при попытке использовать порт '" + port + "'!");
             throw new StartingServerException();
@@ -75,7 +72,7 @@ public class ServerTCP {
             while(true){
                 FutureManager.checkAllFutures();
                 try{
-                    fixedThreadpool.submit(new ConnectionManager(commandManager, connectToClient(), databaseManager));
+                    fixedThreadPool.submit(new ConnectionManager(commandManager, connectToClient(), databaseManager, console));
                 } catch (ConnectionErrorException  ignored){}
             }
         } catch (StartingServerException e) {

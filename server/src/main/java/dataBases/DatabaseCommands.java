@@ -47,6 +47,7 @@ public class DatabaseCommands {
                 id SERIAL PRIMARY KEY,
                 login TEXT,
                 password TEXT,
+                role TEXT,
                 salt TEXT
             );
             """;
@@ -61,11 +62,11 @@ public class DatabaseCommands {
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             RETURNING id;
             """;
+    public static final String deleteObject = """
+            DELETE FROM studyGroup WHERE (id = ?) AND (owner_login = ?) RETURNING id;
+            """;
     public static final String getAllObjects = """
             SELECT * FROM studygroup;
-            """;
-    public static final String deleteUserOwnedObjects = """
-            DELETE FROM studygroup WHERE (owner_login = ?) AND (id = ?) RETURNING id;
             """;
     public static final String updateUserObject = """
             UPDATE studygroup

@@ -2,9 +2,10 @@ package dataBases;
 
 import commandLine.Console;
 import commandLine.Printable;
-import exceptions.LessRoleThanNeedException;
+import main.AppServer;
 import models.*;
 import utility.User;
+import utility.UserRoles;
 
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -14,26 +15,27 @@ import java.util.*;
 public class DatabaseManager {
     private Connection connection;
     private MessageDigest messageDigest;
-    private Printable console = new Console();
+    private final Printable console = new Console();
     private static final String characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ" +
             "abcdefghijklmnopqrstuvwxyz1234567890,.<>?!@#$%^&*()-=_+:*№/|";
     public DatabaseManager() {
         try {
             messageDigest = MessageDigest.getInstance("SHA-256");
-            //тут надо законнектится
+            this.connect();
+            this.createAllBases();
         } catch (NoSuchAlgorithmException e) {
             console.printError("такого алгоритма нет(");
+        } catch (SQLException e) {
+            console.printError("не получилось создать таблицы(");
         }
     }
 
     public void connect() {
-        Properties properties = null;
         try {
-            properties = new Properties();
-            connection = DriverManager.getConnection("jdbc:postgresql://localhost:5432/studs", properties);
+            connection = DriverManager.getConnection(AppServer.DATABASE_URL, AppServer.USER_HELIOS, AppServer.PASSWORD_HELIOS);
         } catch (SQLException e) { // обработка отвала бд
             try {
-                connection = DriverManager.getConnection("jdbc:postgresql://pg:5432/studs", properties);
+                connection = DriverManager.getConnection(AppServer.DATABASE_URL_HELIOS, AppServer.USER_HELIOS, AppServer.PASSWORD_HELIOS);
             } catch (SQLException ex) {
                 console.printError("невозможно подключится к базе данных (");
                 System.exit(1);
@@ -44,13 +46,15 @@ public class DatabaseManager {
     public void addUser(User user) throws SQLException {
         String login = user.getLogin();
         String password = user.getPassword();
+        UserRoles role = user.getRole();
         String salt = this.generateSalt();
         String pass = password  + salt;
         PreparedStatement preparedStatement = connection.prepareStatement(DatabaseCommands.addUser);
         if (this.checkIfUserExists(login)) throw new SQLException();
         preparedStatement.setString(1, login);
         preparedStatement.setString(2, this.passwordSHA256(pass));
-        preparedStatement.setString(3, salt);
+        preparedStatement.setString(3, role.toString());
+        preparedStatement.setString(4, salt);
         preparedStatement.execute();
     }
 
@@ -123,9 +127,9 @@ public class DatabaseManager {
             preparedStatement.setObject(8, studyGroup.getSemesterEnum(), Types.OTHER);
             preparedStatement.setString(9, studyGroup.getGroupAdmin().getName());
             preparedStatement.setFloat(10, studyGroup.getGroupAdmin().getWeight());
-            preparedStatement.setObject(11, studyGroup.getGroupAdmin().getHairColor(), Types.OTHER);
-            preparedStatement.setObject(12, studyGroup.getGroupAdmin().getNationality(), Types.OTHER);
-            preparedStatement.setString(13, user.getLogin());
+            preparedStatement.setString(11, studyGroup.getGroupAdmin().getPassportID());
+            preparedStatement.setObject(12, studyGroup.getGroupAdmin().getHairColor(), Types.OTHER);
+            preparedStatement.setObject(13, studyGroup.getGroupAdmin().getNationality(), Types.OTHER);
             preparedStatement.setString(14, user.getLogin());
             preparedStatement.setInt(15, id);
             ResultSet resultSet = preparedStatement.executeQuery();
@@ -137,7 +141,7 @@ public class DatabaseManager {
 
     public boolean deleteObject(int id, User user) {
         try{
-            PreparedStatement ps = connection.prepareStatement(DatabaseCommands.deleteUserOwnedObjects);
+            PreparedStatement ps = connection.prepareStatement(DatabaseCommands.deleteObject);
             ps.setString(1, user.getLogin());
             ps.setInt(2, id);
             ResultSet resultSet = ps.executeQuery();
@@ -150,11 +154,20 @@ public class DatabaseManager {
     public boolean deleteAllObjects(User user, List<Integer> ids) {
         try {
             for (Integer id : ids) {
-                PreparedStatement ps = connection.prepareStatement(DatabaseCommands.deleteUserOwnedObjects);
+                PreparedStatement ps = connection.prepareStatement(DatabaseCommands.deleteObject);
                 ps.setString(1, user.getLogin());
                 ps.setInt(2, id);
                 ResultSet resultSet = ps.executeQuery();
             }
+            return true;
+        } catch (SQLException e) {
+            return false;
+        }
+    }
+
+    public boolean changeRole(String login, String role) {
+        try {
+            PreparedStatement preparedStatement = connection.prepareStatement("UPDATE users SET role = " + "WHERE login = " + login);
             return true;
         } catch (SQLException e) {
             return false;
@@ -206,5 +219,10 @@ public class DatabaseManager {
             sb.append(String.format("%02x", b));
         }
         return sb.toString();
+    }
+
+    private void createAllBases() throws SQLException {
+        connection.prepareStatement(DatabaseCommands.creation).execute();
+        console.println("Таблицы созданы");
     }
 }

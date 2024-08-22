@@ -1,5 +1,7 @@
 package managers;
 
+import commandLine.Console;
+import commandLine.Printable;
 import dataBases.DatabaseManager;
 import utility.Request;
 import utility.RequestHandler;
@@ -17,12 +19,14 @@ public class ConnectionManager implements Runnable {
     private final DatabaseManager databaseManager;
     private static final ExecutorService fixedThreadPool = Executors.newFixedThreadPool(8);
     private final SocketChannel clientSocket;
+    private final Printable console;
 
 
-    public ConnectionManager(CommandManager commandManager, SocketChannel clientSocket, DatabaseManager databaseManager) {
+    public ConnectionManager(CommandManager commandManager, SocketChannel clientSocket, DatabaseManager databaseManager, Printable console) {
         this.commandManager = commandManager;
         this.clientSocket = clientSocket;
         this.databaseManager = databaseManager;
+        this.console = console;
     }
 
     @Override
@@ -36,7 +40,7 @@ public class ConnectionManager implements Runnable {
                 userRequest = (Request) objectInputStream.readObject();
                 if(!databaseManager.confirmUser(userRequest.getUser())
                         && !userRequest.getCommandName().equals("register")){
-                    //connectionManagerLogger.info("Юзер не одобрен");
+                    console.printError("юзер не одобрен");
                     responseToUser = new Response(ResponseStatus.LOGIN_FAILED, "Неверный пользователь!");
                     submitNewResponse(new ConnectionManagerPool(responseToUser, objectOutputStream));
                 } else{
@@ -44,16 +48,16 @@ public class ConnectionManager implements Runnable {
                 }
             }
         } catch (ClassNotFoundException exception) {
-            //connectionManagerLogger.fatal("Произошла ошибка при чтении полученных данных!");
+            console.printError("произошла ошибка при чтении полученных данных!");
         }catch (CancellationException exception) {
-            //connectionManagerLogger.warn("При обработке запроса произошла ошибка многопоточности!");
+            console.printError("при обработке запроса произошла ошибка многопоточности!");
         } catch (InvalidClassException | NotSerializableException exception) {
-            //connectionManagerLogger.error("Произошла ошибка при отправке данных на клиент!");
+            console.printError("произошла ошибка при отправке данных на клиент!");
         } catch (IOException exception) {
             if (userRequest == null) {
-                //connectionManagerLogger.error("Непредвиденный разрыв соединения с клиентом!");
+                console.printError("непредвиденный разрыв соединения с клиентом!");
             } else {
-                //connectionManagerLogger.info("Клиент успешно отключен от сервера!");
+                console.print("клиент успешно отключен от сервера!");
             }
         }
     }

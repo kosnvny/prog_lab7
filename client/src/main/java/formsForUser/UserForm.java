@@ -1,7 +1,6 @@
 package formsForUser;
 
 import commandLine.*;
-import exceptions.IllegalArguments;
 import exceptions.InvalideForm;
 import utility.ExecuteScriptManager;
 import utility.User;
@@ -30,6 +29,7 @@ public class UserForm extends Form<User>{
                 askPassword()
         );
         setRoleForUser(user);
+        console.println("ваша роль: " + user.getRole());
         return user;
     }
 
@@ -57,11 +57,7 @@ public class UserForm extends Form<User>{
             if (login.isEmpty()){
                 console.printError("Логин не может быть пустым");
                 if (Console.isIsItInFile()) throw new InvalideForm("ошибка в логине");
-            }
-            else{
-                if (login.contains("_admin")) {
-
-                }
+            } else {
                 return login;
             }
         }

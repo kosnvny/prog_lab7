@@ -1,6 +1,7 @@
 package commands;
 
 import dataBases.DatabaseManager;
+import dataBases.DatabaseManagerHandler;
 import utility.Request;
 import utility.Response;
 import utility.ResponseStatus;
@@ -8,10 +9,9 @@ import utility.ResponseStatus;
 import java.sql.SQLException;
 
 public class LogIn extends Command{
-    private DatabaseManager databaseManager;
-    public LogIn(DatabaseManager databaseManager) {
-        super("log_in", " зарегистрироваться");
-        this.databaseManager = databaseManager;
+
+    public LogIn() {
+        super("log_in", " зайти в аккаунт");
     }
 
     /**
@@ -22,11 +22,10 @@ public class LogIn extends Command{
      */
     @Override
     public Response execute(Request request) {
-        try {
-            databaseManager.addUser(request.getUser());
-        } catch (SQLException e) {
-            return new Response(ResponseStatus.LOGIN_FAILED, "Введен невалидный пароль!");
+        DatabaseManager databaseManager = DatabaseManagerHandler.getDatabaseManager();
+        if (databaseManager.confirmUser(request.getUser())) {
+            return new Response(ResponseStatus.OK, "Доступ разрешён");
         }
-        return new Response(ResponseStatus.OK,"Вы успешно зарегистрированы!");
+        return new Response(ResponseStatus.WRONG_ARGUMENTS, "Введённые пароль и логин не являются актуальными или пользователь не зарегистрирован ;(");
     }
 }
