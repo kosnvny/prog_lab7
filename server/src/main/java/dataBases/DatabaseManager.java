@@ -22,11 +22,11 @@ public class DatabaseManager {
         try {
             messageDigest = MessageDigest.getInstance("SHA-256");
             this.connect();
-            this.createAllBases();
+            //this.createAllBases();
         } catch (NoSuchAlgorithmException e) {
             console.printError("такого алгоритма нет(");
-        } catch (SQLException e) {
-            console.printError("не получилось создать таблицы(");
+        //} catch (SQLException e) {
+            //console.printError("не получилось создать таблицы(");
         }
     }
 
@@ -37,6 +37,7 @@ public class DatabaseManager {
             try {
                 connection = DriverManager.getConnection(AppServer.DATABASE_URL_HELIOS, AppServer.USER_HELIOS, AppServer.PASSWORD_HELIOS);
             } catch (SQLException ex) {
+                console.printError(ex.toString());
                 console.printError("невозможно подключится к базе данных (");
                 System.exit(1);
             }
@@ -167,7 +168,7 @@ public class DatabaseManager {
 
     public boolean changeRole(String login, String role) {
         try {
-            PreparedStatement preparedStatement = connection.prepareStatement("UPDATE users SET role = " + "WHERE login = " + login);
+            PreparedStatement preparedStatement = connection.prepareStatement("UPDATE users SET role = " + role + " WHERE login = " + login);
             return true;
         } catch (SQLException e) {
             return false;

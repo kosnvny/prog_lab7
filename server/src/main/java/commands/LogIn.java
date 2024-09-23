@@ -6,8 +6,6 @@ import utility.Request;
 import utility.Response;
 import utility.ResponseStatus;
 
-import java.sql.SQLException;
-
 public class LogIn extends Command{
 
     public LogIn() {
@@ -25,7 +23,8 @@ public class LogIn extends Command{
         DatabaseManager databaseManager = DatabaseManagerHandler.getDatabaseManager();
         if (databaseManager.confirmUser(request.getUser())) {
             return new Response(ResponseStatus.OK, "Доступ разрешён");
+        } else {
+            return new Response(ResponseStatus.WRONG_ARGUMENTS, "Введённые пароль и логин не являются актуальными или пользователь не зарегистрирован ;(");
         }
-        return new Response(ResponseStatus.WRONG_ARGUMENTS, "Введённые пароль и логин не являются актуальными или пользователь не зарегистрирован ;(");
     }
 }

@@ -2,6 +2,7 @@ package utility;
 
 import commandLine.Printable;
 import dataBases.DatabaseManager;
+import dataBases.DatabaseManagerHandler;
 import exceptions.ConnectionErrorException;
 import exceptions.StartingServerException;
 import managers.ConnectionManager;
@@ -22,13 +23,12 @@ public class ServerTCP {
     private ServerSocketChannel serverSocketChannel;
     private SocketChannel socketChannel;
     private final CommandManager commandManager;
-    private final DatabaseManager databaseManager;
+    private final DatabaseManager databaseManager = DatabaseManagerHandler.getDatabaseManager();
     private final ExecutorService fixedThreadPool = Executors.newFixedThreadPool(8);
-    public ServerTCP(int port, Printable console, CommandManager commandManager, DatabaseManager databaseManager) {
+    public ServerTCP(int port, Printable console, CommandManager commandManager) {
         this.port = port;
         this.console = console;
         this.commandManager = commandManager;
-        this.databaseManager = databaseManager;
     }
 
     private void openServerSocket() throws StartingServerException{ // открытие сокета
@@ -72,7 +72,7 @@ public class ServerTCP {
             while(true){
                 FutureManager.checkAllFutures();
                 try{
-                    fixedThreadPool.submit(new ConnectionManager(commandManager, connectToClient(), databaseManager, console));
+                    fixedThreadPool.submit(new ConnectionManager(commandManager, connectToClient()));
                 } catch (ConnectionErrorException  ignored){}
             }
         } catch (StartingServerException e) {

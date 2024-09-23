@@ -3,6 +3,7 @@ package managers;
 import commandLine.Console;
 import commandLine.Printable;
 import dataBases.DatabaseManager;
+import dataBases.DatabaseManagerHandler;
 import utility.Request;
 import utility.RequestHandler;
 import utility.Response;
@@ -16,17 +17,15 @@ import java.util.concurrent.Executors;
 
 public class ConnectionManager implements Runnable {
     private final CommandManager commandManager;
-    private final DatabaseManager databaseManager;
+    private DatabaseManager databaseManager = DatabaseManagerHandler.getDatabaseManager();
     private static final ExecutorService fixedThreadPool = Executors.newFixedThreadPool(8);
     private final SocketChannel clientSocket;
-    private final Printable console;
+    private static final Printable console = new Console();
 
 
-    public ConnectionManager(CommandManager commandManager, SocketChannel clientSocket, DatabaseManager databaseManager, Printable console) {
+    public ConnectionManager(CommandManager commandManager, SocketChannel clientSocket) {
         this.commandManager = commandManager;
         this.clientSocket = clientSocket;
-        this.databaseManager = databaseManager;
-        this.console = console;
     }
 
     @Override
@@ -39,7 +38,7 @@ public class ConnectionManager implements Runnable {
             while (true){
                 userRequest = (Request) objectInputStream.readObject();
                 if(!databaseManager.confirmUser(userRequest.getUser())
-                        && !userRequest.getCommandName().equals("register")){
+                        && !userRequest.getCommandName().equals("log_up")){
                     console.printError("юзер не одобрен");
                     responseToUser = new Response(ResponseStatus.LOGIN_FAILED, "Неверный пользователь!");
                     submitNewResponse(new ConnectionManagerPool(responseToUser, objectOutputStream));
@@ -68,8 +67,7 @@ public class ConnectionManager implements Runnable {
                 connectionManagerPool.getObjectOutputStream().writeObject(connectionManagerPool.getResponse());
                 connectionManagerPool.getObjectOutputStream().flush();
             } catch (IOException e) {
-                //connectionManagerLogger.error("Не удалось отправить ответ");
-                //connectionManagerLogger.debug(e);
+                console.printError("не удалось получить ответ");
             }
         });
     }

@@ -27,7 +27,7 @@ public class RemoveFirstCommand extends Command implements EditingCollection{
         if (DatabaseManagerHandler.getDatabaseManager().deleteObject(1, request.getUser())) {
             collectionManager.removeFirstElement();
             return new Response(ResponseStatus.OK,"первый элемент удален успешно");
-        } else{
+        } else {
             return new Response(ResponseStatus.ERROR, "Выбранный объект не удален. Скорее всего он вам не принадлежит");
         }
     }

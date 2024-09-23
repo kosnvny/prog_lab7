@@ -28,8 +28,7 @@ public class RemoveGreaterCommand extends Command implements EditingCollection, 
     public Response execute(Request request) throws IllegalArguments, LessRoleThanNeedException {
         if (request.getUser().getRole().ordinal() < 2) throw new LessRoleThanNeedException();
         if (!request.getArgs().isBlank()) throw new IllegalArguments("Аргументы запроса должны быть пустыми");
-        //if (Objects.isNull(request.getStudyGroup())) return new Response(ResponseStatus.ASK_FOR_OBJECT, "Команде " + getName() + " требуется объект StudyGroup");
-        //collectionManager.removeGreater(request.getStudyGroup());
+        collectionManager.removeGreater(request.getStudyGroup());
         Collection<StudyGroup> toRemove = collectionManager.getCollection().stream()
                 .filter(Objects::nonNull)
                 .filter(studyGroup -> studyGroup.compareTo(request.getStudyGroup()) >= 1)

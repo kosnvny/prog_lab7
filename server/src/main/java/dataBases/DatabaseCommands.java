@@ -38,7 +38,6 @@ public class DatabaseCommands {
                 semester SEMESTER,
                 person_name TEXT NOT NULL ,
                 person_weight INT,
-                passport text,
                 person_hair_color COLOR,
                 person_nationality COUNTRY,
                 owner_login TEXT NOT NULL
@@ -51,11 +50,11 @@ public class DatabaseCommands {
                 salt TEXT
             );
             """;
+    //scr.sql
     public static final String addUser = """
             INSERT INTO users(login, password, salt) VALUES (?, ?, ?);""";
     public static final String getUser = """
             SELECT * FROM users WHERE (login = ?);""";
-    // passport генерится внутри person'а
     public static final String addObject = """
             INSERT INTO studygroup(group_name, cord_x, cord_y, creation_date, students_count, expelled_students, form_of_education, semester, person_name, person_weight, 
             person_hair_color, person_nationality, owner_login)

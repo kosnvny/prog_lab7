@@ -27,6 +27,7 @@ public class ChangeRoleCommand extends Command{
         try {
            String[] args = request.getArgs().split(" ");
            if (DatabaseManagerHandler.getDatabaseManager().checkIfUserExists(args[0])) {
+                if (args[0].contains("_admin")) throw new LessRoleThanNeedException();
                 if (DatabaseManagerHandler.getDatabaseManager().changeRole(args[0], args[1])) return new Response(ResponseStatus.OK, "Роль пользователя " + args[0] + " изменилась");
                 else return new Response(ResponseStatus.ERROR, "ошибка при попытке изменить роль");
            }

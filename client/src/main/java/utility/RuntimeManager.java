@@ -36,7 +36,7 @@ public class RuntimeManager {
                     boolean isLogIn = true;
                     do {
                         if (!Objects.isNull(response)) {
-                            console.println((isLogIn) ? "такой логин не был найден (" : "попробуйте использовать другой догин");
+                            console.println((isLogIn) ? "такой логин не был найден (" : "попробуйте использовать другой логин");
                         }
                         UserForm userForm = new UserForm(console);
                         isLogIn = userForm.askIfLogin();

@@ -58,11 +58,6 @@ public class CommandManager {
     public Response execute(Request request) throws CommandDoesNotExist, IllegalArguments, ForcedExit, RecursionInScriptException, InvalideForm, LessRoleThanNeedException {
         Command command = commands.get(request.getCommandName());
         if (command == null) throw new CommandDoesNotExist("Данной команды не существует");
-        if (command instanceof CommandsWithElement) {
-            if (Objects.isNull(request.getStudyGroup())) return new Response(ResponseStatus.ASK_FOR_OBJECT, "команде " + command.getName() + " требуется элемент для манипуляций");
-            else ScannerManager.setUsersScanner(request.getStudyGroup().toString());
-        }
-        Response response = command.execute(request);
-        return response;
+        return command.execute(request);
     }
 }

@@ -1,6 +1,7 @@
 package commands;
 
 import dataBases.DatabaseManager;
+import dataBases.DatabaseManagerHandler;
 import utility.Request;
 import utility.Response;
 import utility.ResponseStatus;
@@ -8,10 +9,9 @@ import utility.ResponseStatus;
 import java.sql.SQLException;
 
 public class LogUp extends Command{
-    private final DatabaseManager databaseManager;
-    public LogUp(DatabaseManager databaseManager) {
+    private final DatabaseManager databaseManager = DatabaseManagerHandler.getDatabaseManager();
+    public LogUp() {
         super("log_up", " зарегистрироваться");
-        this.databaseManager = databaseManager;
     }
 
     /**
